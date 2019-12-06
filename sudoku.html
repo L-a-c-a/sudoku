@@ -1,0 +1,578 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<script>
+var szam="1";
+
+var visszaVerem = [];
+var ujraVerem = [];
+
+function szamBeir (cella) // beírja az akt. számot a cellába, ha az ott lehetséges
+{
+  if (cella.innerHTML.indexOf("<br>") > -1) // a még lehets. kis számok vannak benne
+    if (cella.innerHTML.indexOf(szam) > -1) // és ebben benne van az akt. szám
+      cella.innerHTML = '<font size=+5>'+szam+'</font>';
+}
+function muv(p) //p: cella
+{
+  //if (document.frm.tesztmod.checked) if (cellateszt(p)) return;
+  //if (document.frm.kombi.checked) return; //az egyszerűség kedvéért; persze így a kombiKapcs-ban sok mindennek nincs értelme
+
+  //**/console.log("querySelector('input[name=bk]:checked')="+document.querySelector('input[name=bk]:checked').value);
+  if (document.querySelector('input[name=bk]:checked').value.length==1 /*nem kijelölés (ks, ko, kk)*/)
+  {
+    visszaVerem.push(allapot()); document.getElementById("visszaGomb").disabled=false;
+    ujraVerem.length = 0; document.getElementById("ujraGomb").disabled=true;
+  }
+  if (document.frm.bk[0].checked)  //be
+  { //p.innerHTML = '<font size=+5>'+szam+'</font>'
+    szamBeir(p);
+    if (document.frm.autki.checked)
+      tobbiki(p)
+  }
+  if (document.frm.bk[1].checked)  //ki
+    //p.innerHTML = p.innerHTML.replace(szam, '&nbsp;')
+    (szam+"").split('').forEach(sz => p.innerHTML = p.innerHTML.replace(sz, '&nbsp;'))
+  if (document.frm.bk[2].checked)  //reset
+    p.innerHTML = '123<br>456<br>789'
+  if (document.frm.bk[3].checked)  //többi ki
+    tobbiki(p);
+  if (document.frm.bk[4].checked)  //sor lehetségesei
+    kij9(p, sor);
+  if (document.frm.bk[5].checked)  //oszlop lehetségesei
+    kij9(p, oszlop);
+  if (document.frm.bk[6].checked)  //blokk lehetségesei
+    kij9(p, kocka);
+  if (document.frm.szinez.checked) lehetsSzinez();
+  exprt(); // ettől tesxt épp az állapot lett (a 81 számjegy)... jó ronda lett
+  //visszaVerem.push(tesxt); ujraVerem.length = 0;
+}
+
+function kiir(p)
+{ document.getElementById("kiterulet").innerHTML=p  //ie-ben hiba!
+//{ alert('wergtflr')
+}
+
+function szamValt(p)
+{
+  if (document.frm.kombi.checked)
+  {
+    if ((szam+"").includes(p)) //akkor kiszedni
+      szam = (szam+"").split(p).join('');
+    else  //beletenni, méghozzá sorrendbe
+    {
+      var szamok = (szam+"").split('');  //muszáj a köztes változó, mert a push nem a tömböt adja vissza
+      szamok.push(p);
+      szam = szamok.sort().join('');
+    }
+  }else
+    szam = p;
+  kiir(szam);
+  if (document.frm.szinez.checked) lehetsSzinez();
+}
+
+function kiir2(p)  //az állapotjelző dobozba
+{ document.getElementById("kiterulet2").innerHTML=p
+}
+
+szin1 = '#FFFFFF';
+szin2 = '#CCCCCC';
+
+function tbelemlist()
+{ return document.frm.getElementsByTagName("td"); } //az összes <TD> elem a frm-on belül
+
+function mindenCellara (fgv) // végigmegy a 81 cellán és végrehajtja rajtuk fgv-t, az eredményt visszaadja egy 81 hosszú tömbben
+{ var ret = []; // a 81 visszaadott értéknek
+//  for (i=0; i<tbelemlist().length; i++)
+//    if (tbelemlist()[i].id.substr(0,1) == 'c')
+  var cellaList = document.frm.getElementsByClassName("cella");
+  for (i=0; i<cellaList.length; i++)
+      //ret.push(fgv(tbelemlist()[i]))
+      ret.push(fgv(cellaList.item(i)));
+  //**/ console.log(ret);
+  return ret;
+}
+
+//function allapot()
+//{ return mindenCellara(function(cella) { return kitoltes(cella) }).join("") }
+// nem ez lesz (81 hosszó string), mert a kitöltetlen cellák állapotát is meg akarjuk \u0151rizni; hanem stringek (innerHTML-ek) 81 hosszú tömbje
+function allapot()
+{ return mindenCellara(function(cella) { return cella.innerHTML }) }
+
+function test()
+{ tesxt = "";
+  for (i=0; i<tbelemlist().length; i++)
+    tesxt = tesxt + tbelemlist()[i].id + "<br>";
+  kiir(tesxt);
+}
+
+function sor (elem)
+{ return elem.id.substr(1,1) }
+
+function oszlop (elem)
+{ return elem.id.substr(2,1) }
+
+function div3(szam)
+{ return Math.ceil(szam/3) }
+
+function kocka (elem) // melyik blokk (3*3-as rész), 1-től 9-ig
+{ return div3(oszlop(elem)) + (div3(sor(elem))-1)*3 }
+
+function fugg (elem1, elem2)  // "rálát", "egy házban van vele"
+{ if (sor(elem1) == sor(elem2)) return true;
+  if (oszlop(elem1) == oszlop(elem2)) return true;
+  if (kocka(elem1) == kocka(elem2)) return true;
+  return false
+}
+
+function kitoltes(elem)
+{ tomb=elem.innerHTML.match(/>(\d)</)
+  if (tomb)
+    return tomb[1]
+  else
+    return 0
+}
+
+function lehetsSzamok(elem) //return String
+{
+  return elem.innerHTML.match(/(\d)/g).join('');
+}
+
+function kij9(cella, fn) // 9-es egység (sor, oszlop, blokk) kijelölése (szam-ban az abban még lehetségesek lesznek); fn: sor|oszlop|kocka
+{
+  //**/ console.log("cella id="+cella.getAttribute("id"));
+  //**/ console.log("fn="+fn);
+  var halm = new Set([1,2,3,4,5,6,7,8,9]);
+  mindenCellara(elem => (fn(cella)==fn(elem)) ? parseInt(kitoltes(elem)) :  0 )
+    .forEach(sz => halm.delete(sz));
+  szam = Array.from(halm).join('');
+  kiir(szam)
+}
+/*
+  mindenCellara(elem => {
+                          console.log("elem id="+elem.getAttribute("id"));
+                          console.log("fn(cella)="+fn(cella));
+                          console.log("fn(elem)="+fn(elem));
+                          console.log("ret="+(fn(cella)==fn(elem)) ? kitoltes(elem) :  0);
+                          return (fn(cella)==fn(elem)) ? kitoltes(elem) :  0
+                        }
+               )
+*/
+function alapszin(elem) // =kezdeti bgcolor, fehér vagy szürke
+{
+  if (kocka(elem)%2) return szin1;
+  else               return szin2;
+}
+
+szin3 = "#FFFF88";
+szin4 = "#EEEE88";
+
+szin5 = "#88FF88";
+szin6 = "#88EE88";
+
+function lehetsSzinez() // az akt. szám ahol még lehetséges, azt a cellát szin3-ra színezi
+{ for (i=0; i<tbelemlist().length; i++)
+  { ielem = tbelemlist()[i];
+    if (ielem.id.substr(0,1) == 'c')
+    { ielem.setAttribute("bgcolor", alapszin(ielem));
+      if (ielem.innerHTML.indexOf("<br>") > -1) // a még lehets. kis számok vannak benne
+        //if (ielem.innerHTML.indexOf(szam) > -1) // és ebben benne van az akt. szám
+          //ielem.setAttribute("bgcolor", (kocka(ielem)%2) ? szin3 : szin4);
+        {
+          var mind = true; //ha a végén is igaz, minden lehetséges szám a kijelöltek között van
+          var vmely = false; //ha a végén igaz, valamely lehetséges szám a kijelöltek között van
+          lehetsSzamok(ielem).split('').forEach
+          ( lehsz =>
+            {
+              if ((szam+"").includes(lehsz)) vmely=true;
+              else                            mind=false;
+            }
+          );
+          if (mind) ielem.setAttribute("bgcolor", (kocka(ielem)%2) ? szin5 : szin6);
+          else if (vmely) ielem.setAttribute("bgcolor", (kocka(ielem)%2) ? szin3 : szin4);
+        }
+    }
+  }
+}
+
+function szinezKapcs(elem)
+{
+  if (elem.checked)
+    lehetsSzinez();
+  else
+  { var lSzam = szam; // színtelenítés trükkösen
+    szam = 0;
+    lehetsSzinez();
+    szam = lSzam;
+  }
+}
+
+function kombiKapcs(elem)  // a kombi ("Többes kijelölés") onchange-e hívja, this-szel
+{
+  if (elem.checked)
+  {
+    if (!document.frm.bk[1].checked) document.frm.bk[1].checked = true;  // Ki
+    //document.frm.bk[0].disabled = true;  // Be - de marad megkattintható: ha bekapcsolják, kikapcsolódik a kombi mód
+    document.frm.bk[2].disabled = true;
+    document.frm.bk[3].disabled = true;
+    document.frm.bk[4].disabled = false;
+    document.frm.bk[5].disabled = false;
+    document.frm.bk[6].disabled = false;
+  }else
+  {
+    //document.frm.bk[0].disabled = false;
+    document.frm.bk[2].disabled = false;
+    document.frm.bk[3].disabled = false;
+    document.frm.bk[4].disabled = true;
+    document.frm.bk[5].disabled = true;
+    document.frm.bk[6].disabled = true;
+    if (document.querySelector('input[name=bk]:checked').value.length>1 /*ks, ko, kk*/) document.frm.bk[1].checked = true;
+    switch ((szam+"").length)
+    {
+      case 0: szam=1; break;
+      case 1: break;
+      default: szam = szam.substr(0,1);
+    }
+    if (document.frm.szinez.checked) lehetsSzinez();
+    kiir(szam);
+  }
+}
+
+function kombiKikapcs(elem) // a Be gomb onchange-e hívja
+{
+  if (elem.checked)
+  {
+    var kombi = document.frm.kombi
+    kombi.checked = false
+    kombiKapcs(kombi)
+  }
+}
+
+function test2(elem)
+{ tesxt = "";
+  for (i=0; i<tbelemlist().length; i++)
+    if (tbelemlist()[i].id.substr(0,1) == 'c')
+      tesxt = tesxt + tbelemlist()[i].id + ' ' + fugg(tbelemlist()[i], elem) + "<br>";
+  kiir (tesxt);
+}
+
+//const tesztkiElem = document.getElementById('tesztkiterulet');
+
+function cellateszt(elem) // return boolean, hogy muv()-ből ki kell-e lépni
+{ var tesztkiElem = document.getElementById('tesztkiterulet'); // a const-ra nem tudom, miért nem hallgat (null)
+  tesztkiElem.innerHTML = lehetsSzamok(elem);
+  return false;
+}
+
+function tesztKapcs(elem) {}
+
+function exprt() // export és egyéb kijelzés
+{ tesxt = "";
+  var stat = new Array (0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+  for (i=0; i<tbelemlist().length; i++)
+  { ielem = tbelemlist()[i];
+    if (ielem.id.substr(0,1) == 'c')
+    {
+      tesxt = tesxt + kitoltes(ielem);
+      stat[kitoltes(ielem)]++;
+    }
+  }
+  kiir2 (/*tesxt +"<br>" +  */"1,2,3,4,5,6,7,8,9:<br>" + stat.slice(1) +"<br>" + visszaVerem.length +" "+ ujraVerem.length);
+  document.getElementById('importMezo').value = tesxt;
+}
+
+//      p.innerHTML = p.innerHTML.replace(szam, '&nbsp;')
+
+function tobbiki(elem)
+{ var i, ielem;
+  for (i=0; i<tbelemlist().length; i++)
+  { ielem = tbelemlist()[i];
+    if (ielem.id.substr(0,1) == 'c')
+      if (fugg (ielem,elem))
+        if (elem != ielem)
+          if (kitoltes(ielem)==0)
+            ielem.innerHTML = ielem.innerHTML.replace(kitoltes(elem), '&nbsp;')
+  }
+}
+
+function visszacsinal()
+{
+  //if (visszaVerem.length == 0) return;
+  var eAllapot = visszaVerem.pop(); //el\u0151z\u0151 állapot
+  ujraVerem.push(allapot());
+  document.getElementById("ujraGomb").disabled=false;
+  if (visszaVerem.length == 0) document.getElementById("visszaGomb").disabled=true;
+             //alert (allapot +"/"+ visszaVerem.length)   for (i=0; i<tbelemlist().length; i++)
+  odavisszacsinal(eAllapot);
+}
+
+function ujracsinal()
+{ var uAllapot = ujraVerem.pop(); //újracsinálandó állapot
+  visszaVerem.push(allapot());
+  document.getElementById("visszaGomb").disabled=false;
+  if (ujraVerem.length == 0) document.getElementById("ujraGomb").disabled=true;
+  odavisszacsinal(uAllapot);
+}
+
+function odavisszacsinal(allapot)
+{
+  var i, s, o, id, ielem;
+  for (i=0; i<allapot.length /*81*/; i++)
+  { s = Math.floor(i/9) + 1;
+    o = i%9 + 1;
+    id = "c"+s+o;
+    ielem = document.getElementById(id);
+    ielem.innerHTML = allapot[i];
+  }
+  if (document.frm.szinez.checked) lehetsSzinez();
+  exprt();
+}
+
+function imprt(kitoltes) // 81 hosszú string
+{
+  var i, s, o, id, ielem, szamjegy;
+  mindenCellara(function(cella) { cella.innerHTML = '123<br>456<br>789'; });
+  for (i=0; i<kitoltes.length /*81*/; i++)
+  { szamjegy = kitoltes[i];
+    if (szamjegy.match(/[123456789]/))
+    {
+      s = Math.floor(i/9) + 1;
+      o = i%9 + 1;
+      id = "c"+s+o;
+      ielem = document.getElementById(id);
+      ielem.innerHTML = '<font size=+5>'+szamjegy+'</font>';
+      if (document.frm.autki.checked)  //többi ki
+        tobbiki(ielem);
+    }
+  }
+  visszaVerem.length = 0; document.getElementById("visszaGomb").disabled=true;
+  ujraVerem.length = 0; document.getElementById("ujraGomb").disabled=true;
+  kiir2 ("1,2,3,4,5,6,7,8,9:<br>0,0,0,0,0,0,0,0,0<br>0 0");
+  if (document.frm.szinez.checked) lehetsSzinez();
+}
+
+function inic() //onload hívja; frissítéskor a form kapcsolói úgy maradnak, de az állapot nem lesz ezekkel konzisztens
+{
+  szinezKapcs(document.frm.szinez);
+  kombiKapcs(document.frm.kombi);
+  tesztKapcs(document.frm.tesztmod);
+}
+</script>
+
+<style>
+td.cella
+{ width: 3em;
+  height: 4em;
+  text-align: center;
+  font-family: monospace; /* hogy az nbsp is ugyanolyan széles legyen */
+  letter-spacing:3px;
+}
+</style>
+
+<head>
+  <title></title>
+  <meta name="GENERATOR" content="Quanta Plus">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf8">
+</head>
+<body onload="inic();">
+<FORM name=frm>
+  <!-- <TT> helyett css stílus -->
+<table border="1">
+  <tbody>
+    <tr>
+<!-- bgcolor="&{szin1};" nem mx! -->
+      <td class="cella" id="c11" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c12" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c13" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c14" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c15" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c16" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c17" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c18" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c19" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+    </tr>
+    <tr>
+      <td class="cella" id="c21" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c22" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c23" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c24" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c25" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c26" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c27" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c28" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c29" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+    </tr>
+    <tr>
+      <td class="cella" id="c31" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c32" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c33" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c34" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c35" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c36" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c37" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c38" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c39" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+    </tr>
+    <Tr>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </Tr>
+    <tr>
+      <td class="cella" id="c41" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c42" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c43" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c44" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c45" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c46" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c47" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c48" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c49" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+    </tr>
+    <tr>
+      <td class="cella" id="c51" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c52" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c53" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c54" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c55" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c56" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c57" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c58" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c59" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+    </tr>
+    <tr>
+      <td class="cella" id="c61" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c62" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c63" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c64" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c65" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c66" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c67" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c68" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c69" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+    </tr>
+    <Tr>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </Tr>
+    <tr>
+      <td class="cella" id="c71" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c72" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c73" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c74" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c75" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c76" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c77" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c78" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c79" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+    </tr>
+    <tr>
+      <td class="cella" id="c81" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c82" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c83" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c84" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c85" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c86" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c87" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c88" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c89" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+    </tr>
+    <tr>
+      <td class="cella" id="c91" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c92" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c93" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c94" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c95" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c96" bgcolor="#CCCCCC" onclick="muv(this);">123<br>456<br>789</td>
+      <TD></TD>
+      <td class="cella" id="c97" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c98" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+      <td class="cella" id="c99" bgcolor="#FFFFFF" onclick="muv(this);">123<br>456<br>789</td>
+    </tr>
+  </tbody>
+</table>
+<!-- </TT> -->
+<table border="1">
+  <tbody>
+    <tr>
+      <td id="kiterulet" style="font-size: 2em;" onclick="this.innerHTML=szam">1</td>
+    </tr>
+  </tbody>
+</table>
+<INPUT type="button" value="1" onclick="szamValt(1)">
+<INPUT type="button" value="2" onclick="szamValt(2)">
+<INPUT type="button" value="3" onclick="szamValt(3)">
+<INPUT type="button" value="4" onclick="szamValt(4)">
+<INPUT type="button" value="5" onclick="szamValt(5)">
+<INPUT type="button" value="6" onclick="szamValt(6)">
+<INPUT type="button" value="7" onclick="szamValt(7)">
+<INPUT type="button" value="8" onclick="szamValt(8)">
+<INPUT type="button" value="9" onclick="szamValt(9)">
+<br>
+<INPUT type="radio" id="bkb" name="bk" value="b" checked onchange="kombiKikapcs(this)"> <label for="bkb"> Be </label>
+<INPUT type="radio" id="bkk" name="bk" value="k"> <label for="bkk"> Ki </label>
+<INPUT type="radio" id="bkr" name="bk" value="r"> <label for="bkr"> Reset </label>
+<INPUT type="radio" id="bkt" name="bk" value="t"> <label for="bkt"> Ki a többi </label>
+<INPUT type="radio" id="bkks" name="bk" value="ks"> <label for="bkks"> Sor kijelöl </label>
+<INPUT type="radio" id="bkko" name="bk" value="ko"> <label for="bkko"> Oszlop kijelöl </label>
+<INPUT type="radio" id="bkkk" name="bk" value="kk"> <label for="bkkk"> Blokk (3*3) kijelöl </label>
+<br>
+<INPUT TYPE=checkbox id=autki NAME=autki VALUE=y checked>  <label for="autki"> Aut. ki a többi </label>
+<br>
+<INPUT TYPE=checkbox id=szinez NAME=szinez VALUE=y onchange="szinezKapcs(this)"> <label for="szinez"> Színezés, ahol a szám még lehetséges </label>
+<br>
+<INPUT TYPE=checkbox id=kombi NAME=kombi VALUE=n onchange="kombiKapcs(this)"> <label for="kombi"> Többes kijelölés </label>
+<br>
+<!-- -- >
+<INPUT TYPE=checkbox id=tesztmod NAME=tesztmod VALUE=n onchange="tesztKapcs(this)"> <label for="tesztmod"> Teszt mód (cellába kattintás: tesztművelet) </label>
+<br>
+<!-- -->
+<INPUT type="button" value="test" onclick="kiir2(allapot())">
+</FORM>
+<table border="1">
+  <tbody>
+    <tr>
+      <td id="kiterulet2" onclick="exprt()">1,2,3,4,5,6,7,8,9:<br>0,0,0,0,0,0,0,0,0</td>
+    </tr>
+  </tbody>
+</table>
+<div id="tesztkiterulet"></div>
+<input id="importMezo" size=200 style="width:80%">
+  <input id="importGomb" type="button" value="Import" onclick="imprt(document.getElementById('importMezo').value)"><br>
+<INPUT id="visszaGomb" type="button" value="<" onclick="visszacsinal()" disabled>
+<INPUT id="ujraGomb" type="button" value=">" onclick="ujracsinal()" disabled>
+</body>
+</html>
