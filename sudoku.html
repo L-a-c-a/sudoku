@@ -41,7 +41,7 @@ function muv(p) //p: cella
   if (document.frm.bk[5].checked)  //oszlop lehetségesei
     kij9(p, oszlop);
   if (document.frm.bk[6].checked)  //blokk lehetségesei
-    kij9(p, kocka);
+    kij9(p, blokk);
   if (document.frm.szinez.checked) lehetsSzinez();
   exprt(); // ettől tesxt épp az állapot lett (a 81 számjegy)... jó ronda lett
   //visszaVerem.push(tesxt); ujraVerem.length = 0;
@@ -114,13 +114,13 @@ function oszlop (elem)
 function div3(szam)
 { return Math.ceil(szam/3) }
 
-function kocka (elem) // melyik blokk (3*3-as rész), 1-től 9-ig
+function blokk (elem) // melyik blokk (3*3-as rész), 1-től 9-ig
 { return div3(oszlop(elem)) + (div3(sor(elem))-1)*3 }
 
-function fugg (elem1, elem2)  // "rálát", "egy házban van vele"
+function ralat (elem1, elem2)  // "rálát" = "egy házban van vele"
 { if (sor(elem1) == sor(elem2)) return true;
   if (oszlop(elem1) == oszlop(elem2)) return true;
-  if (kocka(elem1) == kocka(elem2)) return true;
+  if (blokk(elem1) == blokk(elem2)) return true;
   return false
 }
 
@@ -137,7 +137,7 @@ function lehetsSzamok(elem) //return String
   return elem.innerHTML.match(/(\d)/g).join('');
 }
 
-function kij9(cella, fn) // 9-es egység (sor, oszlop, blokk) kijelölése (szam-ban az abban még lehetségesek lesznek); fn: sor|oszlop|kocka
+function kij9(cella, fn) // 9-es egység (sor, oszlop, blokk) kijelölése (szam-ban az abban még lehetségesek lesznek); fn: sor|oszlop|blokk
 {
   //**/ console.log("cella id="+cella.getAttribute("id"));
   //**/ console.log("fn="+fn);
@@ -159,7 +159,7 @@ function kij9(cella, fn) // 9-es egység (sor, oszlop, blokk) kijelölése (szam
 */
 function alapszin(elem) // =kezdeti bgcolor, fehér vagy szürke
 {
-  if (kocka(elem)%2) return szin1;
+  if (blokk(elem)%2) return szin1;
   else               return szin2;
 }
 
@@ -176,7 +176,7 @@ function lehetsSzinez() // az akt. szám ahol még lehetséges, azt a cellát sz
     { ielem.setAttribute("bgcolor", alapszin(ielem));
       if (ielem.innerHTML.indexOf("<br>") > -1) // a még lehets. kis számok vannak benne
         //if (ielem.innerHTML.indexOf(szam) > -1) // és ebben benne van az akt. szám
-          //ielem.setAttribute("bgcolor", (kocka(ielem)%2) ? szin3 : szin4);
+          //ielem.setAttribute("bgcolor", (blokk(ielem)%2) ? szin3 : szin4);
         {
           var mind = true; //ha a végén is igaz, minden lehetséges szám a kijelöltek között van
           var vmely = false; //ha a végén igaz, valamely lehetséges szám a kijelöltek között van
@@ -187,8 +187,8 @@ function lehetsSzinez() // az akt. szám ahol még lehetséges, azt a cellát sz
               else                            mind=false;
             }
           );
-          if (mind) ielem.setAttribute("bgcolor", (kocka(ielem)%2) ? szin5 : szin6);
-          else if (vmely) ielem.setAttribute("bgcolor", (kocka(ielem)%2) ? szin3 : szin4);
+          if (mind) ielem.setAttribute("bgcolor", (blokk(ielem)%2) ? szin5 : szin6);
+          else if (vmely) ielem.setAttribute("bgcolor", (blokk(ielem)%2) ? szin3 : szin4);
         }
     }
   }
@@ -251,7 +251,7 @@ function test2(elem)
 { tesxt = "";
   for (i=0; i<tbelemlist().length; i++)
     if (tbelemlist()[i].id.substr(0,1) == 'c')
-      tesxt = tesxt + tbelemlist()[i].id + ' ' + fugg(tbelemlist()[i], elem) + "<br>";
+      tesxt = tesxt + tbelemlist()[i].id + ' ' + ralat(tbelemlist()[i], elem) + "<br>";
   kiir (tesxt);
 }
 
@@ -287,7 +287,7 @@ function tobbiki(elem)
   for (i=0; i<tbelemlist().length; i++)
   { ielem = tbelemlist()[i];
     if (ielem.id.substr(0,1) == 'c')
-      if (fugg (ielem,elem))
+      if (ralat (ielem,elem))
         if (elem != ielem)
           if (kitoltes(ielem)==0)
             ielem.innerHTML = ielem.innerHTML.replace(kitoltes(elem), '&nbsp;')
@@ -528,7 +528,7 @@ td.cella
 <table border="1">
   <tbody>
     <tr>
-      <td id="kiterulet" style="font-size: 2em;" onclick="this.innerHTML=szam">1</td>
+      <td id="kiterulet" style="font-size: 2em; height: 1.2em; width: .7em;" onclick="this.innerHTML=szam">1</td>
     </tr>
   </tbody>
 </table>
