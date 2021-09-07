@@ -27,7 +27,7 @@ Lásd még: http://www.math.u-szeged.hu/Sudoku/sudoku.pdf
   - Színezés, ahol a szám még lehetséges: Színezi azokat a cellákat, ahol a kijelölt szám(ok) lehetőségként megvan(nak).  
   Zöld: ha csak az(ok) lehetséges(ek) a cellában. (Leginkább többes kijelölésnél.)  
   Sárga: ha a kijelölteken kívül más szám is lehetséges a cellában.  
-  (Hasznos "n-es [rejtett] lehetőség"-nél. Ha egy házban pont annyi zöld cella van, mint kijelölt szám, akkor abban a házban a sárgákból egy kattintásal ki lehet törölni a kijelölt számokat.)
+  (Hasznos "n-es [rejtett] lehetőség"-nél. Ha egy házban pont annyi zöld cella van, mint kijelölt szám, akkor abban a házban a sárgákból egy-egy kattintással ki lehet törölni a kijelölt számokat.)
   - Többes kijelölés: több szám lehet egyszerre kijelölve.
 - Állapotkijelző doboz. Kijelzi:
   - hogy melyik számból hány van megfejtve (kitöltve),
